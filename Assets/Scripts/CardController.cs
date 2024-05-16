@@ -18,9 +18,7 @@ public class CardController : MonoBehaviour
 
     void Awake()
     {
-        //button = this.transform.GetChild(0).GetComponent<Button>();
         button = GetComponent<Button>();
-        //image = this.transform.GetChild(0).GetComponent<Image>();
         image = GetComponent<Image>();
         animation = GetComponent<Animation>();
         button.onClick.AddListener(OnCardClicked);
@@ -64,10 +62,7 @@ public class CardController : MonoBehaviour
     public void DisableCard()
     {
         button.onClick.RemoveListener(OnCardClicked);
-        transform.GetChild(1).gameObject.SetActive(true);
-        //Enable hidden button that only play animation & hide it on Enable card
-        //button.GetComponent<Animation>().Play();
-        //StartCoroutine(DIS());
+        transform.GetChild(1).gameObject.SetActive(true); 
     }
 
     public void HiddenButtonListenr()
@@ -103,4 +98,6 @@ public class CardController : MonoBehaviour
     {
         return !button.interactable;
     }
+
+
 }

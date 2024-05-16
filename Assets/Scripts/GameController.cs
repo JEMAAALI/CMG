@@ -13,15 +13,17 @@ public class GameController : MonoBehaviour
     public Text turnText;
     public Text timerText;
     public Text messageText;
+    public Text scoreText; // Added for displaying the score
     public GridLayoutGroup layoutGroup;
 
-    private int rows = 3;
-    private int cols = 2;
+    private int rows = 4;
+    private int cols = 4;
     private CardController firstCard;
     private CardController secondCard;
     private int matches = 0;
     private int turns = 0;
-    private float timeRemaining = 180f; // 2 minutes
+    private int score = 0; // Added to track the score
+    private float timeRemaining = 180f; // 3 minutes
     private bool gameEnded = false;
     private bool isCheckingMatch = false;
     private List<CardController> clickableCards = new List<CardController>();
@@ -31,14 +33,9 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
-        
+       // LoadScore();
         SetupBoard();
     }
-
-
-     
-
-
 
     void Update()
     {
@@ -78,8 +75,11 @@ public class GameController : MonoBehaviour
                 clickableCards.Add(card);
             }
         }
-
+        UpdateGridLayout();
+        UpdateUI();
     }
+
+    
 
     public void CardFlipped(CardController card)
     {
@@ -102,6 +102,7 @@ public class GameController : MonoBehaviour
             if (firstCard.cardValue == secondCard.cardValue)
             {
                 matches++;
+                score += 10; // Increment score on match
                 StartCoroutine(MatchEffects(firstCard));
                 StartCoroutine(MatchEffects(secondCard));
                 EnableAllClickableCards();
@@ -123,7 +124,6 @@ public class GameController : MonoBehaviour
         }
     }
 
-     
     IEnumerator HideCardsAfterDelay()
     {
         yield return new WaitForSeconds(1);
@@ -137,22 +137,17 @@ public class GameController : MonoBehaviour
         isCheckingMatch = false;
     }
 
-     
-
     IEnumerator MatchEffects(CardController card)
     {
-
         WaitForSeconds _w1 = new WaitForSeconds(1f);
         WaitForSeconds _w2 = new WaitForSeconds(2f);
         yield return _w1;
-        GetComponent<AudioSource>().PlayOneShot(matchSound); 
+        GetComponent<AudioSource>().PlayOneShot(matchSound);
         card.transform.GetChild(0).gameObject.SetActive(true);
         yield return _w2;
         card.transform.GetChild(0).gameObject.SetActive(false);
         CheckWinCondition();
     }
-
-
 
     void UpdateTimer()
     {
@@ -167,11 +162,11 @@ public class GameController : MonoBehaviour
         {
             gameEnded = true;
             messageText.text = "Game Over!\nTime's up!";
-            timerText.text = string.Format("{0:00}:{1:00}", 00,00);
+            timerText.text = string.Format("{0:00}:{1:00}", 0, 0);
             matchText.text = "";
             turnText.text = "";
+            scoreText.text = "";
             DisableForGameOver();
-
         }
     }
 
@@ -185,15 +180,16 @@ public class GameController : MonoBehaviour
             gameEnded = true;
             matchText.text = "";
             turnText.text = "";
+            scoreText.text = "";
             messageText.text = "Congratulations! \n You Win!";
         }
-
     }
 
     void UpdateUI()
     {
         matchText.text = "Matches: " + matches;
         turnText.text = "Turns: " + turns;
+        scoreText.text = "Score: " + score;
     }
 
     void Shuffle(List<int> list)
@@ -235,5 +231,43 @@ public class GameController : MonoBehaviour
         {
             card.DisableForGameOver();
         }
+    }
+
+    public void SaveScore()
+    {
+        PlayerPrefs.SetInt("HighScore", score);
+        PlayerPrefs.Save();
+    }
+
+    public void LoadScore()
+    {
+        if (PlayerPrefs.HasKey("HighScore"))
+        {
+            score = PlayerPrefs.GetInt("HighScore");
+        }
+    }
+
+    void UpdateGridLayout()
+    {
+        float layoutWidth = layoutGroup.GetComponent<RectTransform>().rect.width;
+        float layoutHeight = layoutGroup.GetComponent<RectTransform>().rect.height;
+
+        float maxCellWidth = layoutWidth / cols;
+        float maxCellHeight = layoutHeight / rows;
+        float cellSize = Mathf.Min(maxCellWidth, maxCellHeight);
+        
+        layoutGroup.cellSize = new Vector2(cellSize, cellSize);
+        layoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        layoutGroup.constraintCount = cols;
+
+        foreach (CardController card in clickableCards)
+        {
+            card.transform.GetChild(0).GetComponent<RectTransform>().sizeDelta= new Vector2(cellSize, cellSize); 
+
+            card.transform.GetChild(1).GetComponent<RectTransform>().sizeDelta= new Vector2(cellSize, cellSize);
+
+        }
+
+
     }
 }
