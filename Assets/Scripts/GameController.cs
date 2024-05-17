@@ -33,15 +33,26 @@ public class GameController : MonoBehaviour
 
     public AudioClip matchSound;
     public AudioClip notMatchSound;
+    public AudioClip winSound;
+    public AudioClip looseSound;
+    public GameObject _effects;
+    public GameObject _timeReward;
+
     public Button SaveBTN;
-    public Button LoadBTN;
 
     void Start()
     {
         Time.timeScale = 1;
-        rows = GameObject.Find("MenuManager").GetComponent<Menu>().rows;
-        cols = GameObject.Find("MenuManager").GetComponent<Menu>().cols;
-        SetupBoard();
+        if (GameObject.Find("MenuManager").GetComponent<Menu>()._loadGame == true)
+        {
+            LoadGame();
+        }
+        else
+        {
+            rows = GameObject.Find("MenuManager").GetComponent<Menu>().rows;
+            cols = GameObject.Find("MenuManager").GetComponent<Menu>().cols;
+            SetupBoard();
+        }
     }
 
     void Update()
@@ -49,6 +60,12 @@ public class GameController : MonoBehaviour
         if (!gameEnded)
         {
             UpdateTimer();
+        }
+        else
+        {
+            matchText.text = "";
+            turnText.text = "";
+            scoreText.text = "";
         }
     }
 
@@ -113,6 +130,12 @@ public class GameController : MonoBehaviour
             {
                 matches++;
                 score += 10; // Increment score on match
+                if (score == 50)
+                { 
+                    _timeReward.SetActive(true);
+                    _timeReward.GetComponent<Animation>().Play();
+                    timeRemaining += 30;
+                }
                 firstCard.LoadFlipped();
                 secondCard.LoadFlipped();
                 StartCoroutine(MatchEffects(firstCard));
@@ -173,14 +196,14 @@ public class GameController : MonoBehaviour
         else
         {
             gameEnded = true;
-            messageText.text = "Game Over!\nTime's up!";
+            GetComponent<AudioSource>().PlayOneShot(looseSound);
+            DisableForGameOver();
+            messageText.text = "Game Over!\nTime's up!"; 
             timerText.text = string.Format("{0:00}:{1:00}", 0, 0);
             matchText.text = "";
             turnText.text = "";
-            scoreText.text = "";
-            DisableForGameOver();
+            scoreText.text = ""; 
             SaveBTN.interactable=false;
-            LoadBTN.interactable=false;
         }
     }
 
@@ -196,8 +219,9 @@ public class GameController : MonoBehaviour
             turnText.text = "";
             scoreText.text = "";
             SaveBTN.interactable = false;
-            LoadBTN.interactable = false;
             messageText.text = "Congratulations! \n You Win!";
+            GetComponent<AudioSource>().PlayOneShot(winSound);
+            _effects.SetActive(true);
         }
     }
 
@@ -346,7 +370,7 @@ public class GameController : MonoBehaviour
     }
     public void Replay()
     {
-        
+        GameObject.Find("MenuManager").GetComponent<Menu>()._loadGame = false;
         SceneManager.LoadScene("mainScene");
         DontDestroyOnLoad(GameObject.Find("MenuManager").gameObject);
         Time.timeScale = 1;

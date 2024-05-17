@@ -99,8 +99,14 @@ public class CardController : MonoBehaviour
     public void LoadFlipped()
     { 
         isFlipped = true;
+        StartCoroutine(FlipCard());
+    }
+    IEnumerator Flip()
+    {
+        WaitForSeconds _w = new WaitForSeconds(0.5f);
+        animation.Play();
+        yield return _w;
         image.sprite = cardFace;
     }
-
 
 }

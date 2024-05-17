@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -15,6 +16,9 @@ public class Menu : MonoBehaviour
     public int rows;
     public int cols;
 
+    public bool _loadGame = false;
+    public Button _loadBTN ;
+
     int[] A1 = { 2, 3, 4, 5, 6, 7, 8, 9 };
     int[] A2 = { 2, 3, 4, 5, 6, 7, 8, 9 };
 
@@ -26,6 +30,16 @@ public class Menu : MonoBehaviour
 
     void Start()
     {
+        //check if we have saved the game already
+        //Check with any saved variable
+        if (PlayerPrefs.GetInt("rows") != 0)
+        {
+            _loadBTN.interactable = true;
+        }
+        else
+        {
+            _loadBTN.interactable = false;
+        }
         validA1Selections.AddRange(A1);
         validA2Selections.AddRange(A2);
 
@@ -135,6 +149,13 @@ public class Menu : MonoBehaviour
 
     public void Play()
     {
+        SceneManager.LoadScene("mainScene");
+        DontDestroyOnLoad(GameObject.Find("MenuManager").gameObject);
+    }
+
+    public void Load()
+    {
+        _loadGame = true;
         SceneManager.LoadScene("mainScene");
         DontDestroyOnLoad(GameObject.Find("MenuManager").gameObject);
     }
