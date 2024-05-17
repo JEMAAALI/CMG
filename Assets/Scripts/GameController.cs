@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
@@ -16,8 +18,8 @@ public class GameController : MonoBehaviour
     public Text scoreText; // Added for displaying the score
     public GridLayoutGroup layoutGroup;
 
-    private int rows = 4;
-    private int cols = 4;
+    private int rows;
+    private int cols;
     private CardController firstCard;
     private CardController secondCard;
     private int matches = 0;
@@ -27,13 +29,18 @@ public class GameController : MonoBehaviour
     private bool gameEnded = false;
     private bool isCheckingMatch = false;
     private List<CardController> clickableCards = new List<CardController>();
+    private List<CardController> allCards = new List<CardController>();
 
     public AudioClip matchSound;
     public AudioClip notMatchSound;
+    public Button SaveBTN;
+    public Button LoadBTN;
 
     void Start()
     {
-       // LoadScore();
+        Time.timeScale = 1;
+        rows = GameObject.Find("MenuManager").GetComponent<Menu>().rows;
+        cols = GameObject.Find("MenuManager").GetComponent<Menu>().cols;
         SetupBoard();
     }
 
@@ -63,16 +70,19 @@ public class GameController : MonoBehaviour
             cardValues.Add(i);
         }
         Shuffle(cardValues);
-
+        int cardNumber = 0;
         for (int row = 0; row < rows; row++)
         {
             for (int col = 0; col < cols; col++)
             {
                 GameObject cardObject = Instantiate(cardPrefab, cardParent);
+                cardNumber++;
+                cardObject.name = "card_" + cardNumber;
                 CardController card = cardObject.GetComponent<CardController>();
                 int index = row * cols + col;
                 card.SetCard(cardValues[index], cardBackSprite, cardFaceSprites[cardValues[index]]);
                 clickableCards.Add(card);
+                allCards.Add(card);
             }
         }
         UpdateGridLayout();
@@ -103,6 +113,8 @@ public class GameController : MonoBehaviour
             {
                 matches++;
                 score += 10; // Increment score on match
+                firstCard.LoadFlipped();
+                secondCard.LoadFlipped();
                 StartCoroutine(MatchEffects(firstCard));
                 StartCoroutine(MatchEffects(secondCard));
                 EnableAllClickableCards();
@@ -114,7 +126,6 @@ public class GameController : MonoBehaviour
                 clickableCards.Remove(secondCard);
                 firstCard = null;
                 secondCard = null;
-                UpdateUI();
                 isCheckingMatch = false;
             }
             else
@@ -142,10 +153,11 @@ public class GameController : MonoBehaviour
         WaitForSeconds _w1 = new WaitForSeconds(1f);
         WaitForSeconds _w2 = new WaitForSeconds(2f);
         yield return _w1;
+        UpdateUI();
         GetComponent<AudioSource>().PlayOneShot(matchSound);
         card.transform.GetChild(0).gameObject.SetActive(true);
         yield return _w2;
-        card.transform.GetChild(0).gameObject.SetActive(false);
+        card.transform.GetChild(0).gameObject.SetActive(false); 
         CheckWinCondition();
     }
 
@@ -167,6 +179,8 @@ public class GameController : MonoBehaviour
             turnText.text = "";
             scoreText.text = "";
             DisableForGameOver();
+            SaveBTN.interactable=false;
+            LoadBTN.interactable=false;
         }
     }
 
@@ -181,6 +195,8 @@ public class GameController : MonoBehaviour
             matchText.text = "";
             turnText.text = "";
             scoreText.text = "";
+            SaveBTN.interactable = false;
+            LoadBTN.interactable = false;
             messageText.text = "Congratulations! \n You Win!";
         }
     }
@@ -197,7 +213,7 @@ public class GameController : MonoBehaviour
         for (int i = 0; i < list.Count; i++)
         {
             int temp = list[i];
-            int randomIndex = Random.Range(0, list.Count);
+            int randomIndex = UnityEngine.Random.Range(0, list.Count);
             list[i] = list[randomIndex];
             list[randomIndex] = temp;
         }
@@ -232,21 +248,71 @@ public class GameController : MonoBehaviour
             card.DisableForGameOver();
         }
     }
+    /// <summary>
+    /// ////////////////////////////SAVE & LOAD//////////////////////
+    /// </summary>
+     
 
-    public void SaveScore()
+    public void SaveGame()
     {
-        PlayerPrefs.SetInt("HighScore", score);
-        PlayerPrefs.Save();
+        PlayerPrefs.SetInt("rows", rows);
+        PlayerPrefs.SetInt("cols", cols);
+        PlayerPrefs.SetInt("turns", turns);
+        PlayerPrefs.SetInt("score", score);
+        PlayerPrefs.SetInt("matches", matches);
+        PlayerPrefs.SetFloat("timeRemaining", timeRemaining);
+        foreach (CardController card in allCards)
+        {
+            PlayerPrefs.SetInt(""+card.gameObject.name+"_value", card.GetComponent<CardController>().cardValue);
+            if (card.GetComponent<CardController>().isFlipped == true)
+            {
+                PlayerPrefs.SetInt("" + card.gameObject.name + "_isFlipped", 1);
+            }
+            else
+            {
+                PlayerPrefs.SetInt("" + card.gameObject.name + "_isFlipped", 0);
+            } 
+
+        }
+        //PlayerPrefs.Save();
     }
 
-    public void LoadScore()
+    public void LoadGame()
     {
-        if (PlayerPrefs.HasKey("HighScore"))
+        rows = PlayerPrefs.GetInt("rows");
+        cols = PlayerPrefs.GetInt("cols");
+        GameObject.Find("MenuManager").GetComponent<Menu>().rows = rows;
+        GameObject.Find("MenuManager").GetComponent<Menu>().cols = cols;
+        turns =PlayerPrefs.GetInt("turns");
+        score=PlayerPrefs.GetInt("score");
+        matches=PlayerPrefs.GetInt("matches");
+        timeRemaining= PlayerPrefs.GetFloat("timeRemaining");
+        foreach (CardController card in allCards)
         {
-            score = PlayerPrefs.GetInt("HighScore");
+            Destroy(card.gameObject);
+        }
+        clickableCards.Clear();
+        allCards.Clear();
+        firstCard = null;
+        secondCard = null;
+        SetupBoard();
+        foreach (CardController card in allCards)
+        {
+            card.GetComponent<CardController>().cardValue = PlayerPrefs.GetInt("" + card.gameObject.name + "_value");
+            card.SetCard(card.GetComponent<CardController>().cardValue, cardBackSprite, cardFaceSprites[card.GetComponent<CardController>().cardValue]);
+            if (PlayerPrefs.GetInt("" + card.gameObject.name + "_isFlipped") == 1)
+            {
+                card.LoadFlipped();
+                UpdateUI();
+            }
+             
+            
+            
         }
     }
-
+    /// <summary>
+    /// //////////////////////////////////////////////////////////////
+    /// </summary>
     void UpdateGridLayout()
     {
         float layoutWidth = layoutGroup.GetComponent<RectTransform>().rect.width;
@@ -262,12 +328,32 @@ public class GameController : MonoBehaviour
 
         foreach (CardController card in clickableCards)
         {
-            card.transform.GetChild(0).GetComponent<RectTransform>().sizeDelta= new Vector2(cellSize, cellSize); 
-
+            card.transform.GetChild(0).GetComponent<RectTransform>().sizeDelta= new Vector2(cellSize, cellSize);  
             card.transform.GetChild(1).GetComponent<RectTransform>().sizeDelta= new Vector2(cellSize, cellSize);
 
         }
 
 
+    }
+
+    public void PauseGame()
+    {
+        Time.timeScale = 0;
+    }
+    public void ResumeGame()
+    {
+        Time.timeScale = 1;
+    }
+    public void Replay()
+    {
+        
+        SceneManager.LoadScene("mainScene");
+        DontDestroyOnLoad(GameObject.Find("MenuManager").gameObject);
+        Time.timeScale = 1;
+    }
+    public void Quit()
+    {
+        Destroy(GameObject.Find("MenuManager").gameObject);
+        SceneManager.LoadScene("mainMenu");
     }
 }

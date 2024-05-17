@@ -34,6 +34,7 @@ public class CardController : MonoBehaviour
 
     public void OnCardClicked()
     {
+        button.onClick.RemoveListener(OnCardClicked);
         GetComponent<AudioSource>().Play();
         if (!isFlipped)
         {
@@ -78,6 +79,7 @@ public class CardController : MonoBehaviour
         image.sprite = cardFace;
         yield return _w;
         image.sprite = cardBack;
+ 
     }
 
     public void DisableForGameOver()
@@ -94,9 +96,10 @@ public class CardController : MonoBehaviour
     }
 
 
-    public bool IsMatched()
-    {
-        return !button.interactable;
+    public void LoadFlipped()
+    { 
+        isFlipped = true;
+        image.sprite = cardFace;
     }
 
 
